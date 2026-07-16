@@ -30,8 +30,11 @@ FEEDS = [
     ("Dark Reading", "https://www.darkreading.com/rss.xml"),
     ("SANS ISC", "https://isc.sans.edu/rssfeed_full.xml"),
     ("The Record", "https://therecord.media/feed/"),
-    ("CISA Advisories", "https://www.cisa.gov/cybersecurity-advisories/all.xml"),
-    ("Google Project Zero", "https://projectzero.google/feed.xml"),
+    ("SecurityWeek", "https://www.securityweek.com/feed/"),
+    ("Google Project Zero", "https://googleprojectzero.blogspot.com/feeds/posts/default"),
+    # CISA retired its RSS feeds in May 2025 (GovDelivery email only now).
+    # For KEV data, poll the JSON catalog instead — it's still published:
+    # https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
 ]
 
 LOOKBACK_HOURS = 24
@@ -96,13 +99,24 @@ def entry_date(entry) -> datetime | None:
     return None
 
 
-def fetch_articles(cutoff: datetime) -> list[Article]:
+def fetch_articles(cutoff: datetime) -> tuple[list[Article], list[str]]:
+    """Returns (articles, names of feeds that failed)."""
     articles: list[Article] = []
+    broken: list[str] = []
+
     for source, url in FEEDS:
         try:
             parsed = feedparser.parse(url, agent="cyber-digest/1.0")
+
+            status = getattr(parsed, "status", 200)
+            if status >= 400:
+                log.warning("%s: HTTP %s", source, status)
+                broken.append(f"{source} (HTTP {status})")
+                continue
+
             if parsed.bozo and not parsed.entries:
                 log.warning("%s: feed unreadable (%s)", source, parsed.bozo_exception)
+                broken.append(f"{source} (unreadable)")
                 continue
 
             kept = 0
@@ -122,9 +136,10 @@ def fetch_articles(cutoff: datetime) -> list[Article]:
             log.info("%s: %d recent item(s)", source, kept)
         except Exception as exc:  # one bad feed must not kill the run
             log.warning("%s: fetch failed (%s)", source, exc)
+            broken.append(f"{source} (unreachable)")
 
     articles.sort(key=lambda a: a.published, reverse=True)
-    return articles
+    return articles, broken
 
 
 # --------------------------------------------------------------------------
@@ -199,8 +214,21 @@ def summarize(articles: list[Article]) -> str:
 # 4. Format
 # --------------------------------------------------------------------------
 
-def build_email(body_html: str, article_count: int, feed_count: int) -> str:
+def build_email(
+    body_html: str, article_count: int, feed_count: int, broken: list[str]
+) -> str:
     today = datetime.now(timezone.utc).strftime("%A %d %B %Y")
+
+    warning = ""
+    if broken:
+        noun = "source" if len(broken) == 1 else "sources"
+        warning = (
+            f'<p style="margin:8px 0 0;font-size:12px;color:#b45309;">'
+            f"Heads up: {len(broken)} {noun} failed to load today and "
+            f"{'was' if len(broken) == 1 else 'were'} not included &mdash; "
+            f"{html.escape(', '.join(broken))}.</p>"
+        )
+
     return f"""<!DOCTYPE html>
 <html>
 <body style="margin:0;padding:24px;background:#f5f5f4;font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;">
@@ -212,9 +240,10 @@ def build_email(body_html: str, article_count: int, feed_count: int) -> str:
     </div>
     <hr style="border:none;border-top:1px solid #e5e5e3;margin:28px 0 12px;">
     <p style="margin:0;font-size:12px;color:#8a8a85;">
-      {article_count} stories from {feed_count} sources, last {LOOKBACK_HOURS}h.
+      {article_count} stories from {feed_count - len(broken)} of {feed_count} sources, last {LOOKBACK_HOURS}h.
       Summaries are AI-generated &mdash; verify before acting.
     </p>
+    {warning}
   </div>
 </body>
 </html>"""
@@ -229,14 +258,22 @@ def send_email(subject: str, html_body: str) -> None:
         "https://api.resend.com/emails",
         headers={"Authorization": f"Bearer {os.environ['RESEND_API_KEY']}"},
         json={
-            "from": os.environ["EMAIL_FROM"],       # e.g. "Digest <digest@yourdomain.com>"
+            "from": os.environ["EMAIL_FROM"],       # e.g. "Digest <onboarding@resend.dev>"
             "to": [os.environ["EMAIL_TO"]],
             "subject": subject,
             "html": html_body,
         },
         timeout=30,
     )
-    response.raise_for_status()
+
+    if not response.ok:
+        # Resend explains the failure in the body; raise_for_status alone hides it.
+        try:
+            detail = response.json().get("message", response.text)
+        except ValueError:
+            detail = response.text
+        raise RuntimeError(f"Resend refused the send ({response.status_code}): {detail}")
+
     log.info("Email sent: %s", response.json().get("id"))
 
 
@@ -245,13 +282,14 @@ def send_email(subject: str, html_body: str) -> None:
 def main() -> int:
     cutoff = datetime.now(timezone.utc) - timedelta(hours=LOOKBACK_HOURS)
 
-    articles = dedupe(fetch_articles(cutoff))
+    articles, broken = fetch_articles(cutoff)
+    articles = dedupe(articles)
     if not articles:
         log.warning("Nothing collected. Skipping today's send.")
         return 0
 
     body = summarize(articles)
-    email_html = build_email(body, len(articles), len(FEEDS))
+    email_html = build_email(body, len(articles), len(FEEDS), broken)
 
     if "--dry-run" in sys.argv:
         with open("preview.html", "w", encoding="utf-8") as fh:
