@@ -57,7 +57,7 @@ Rules:
 - Rank by real-world impact: actively exploited vulnerabilities, large breaches, and \
 critical infrastructure incidents outrank product announcements and opinion pieces.
 - Group items that cover the same underlying story into one entry.
-- Cite the source name in parentheses and link the headline to its URL.
+- Cite the source name in parentheses with a link to the source URL.
 - Write in your own words. Do not quote the source text.
 - If a claim is unconfirmed or vendor-supplied, say so.
 - Drop marketing content, listicles, and sponsored posts entirely.
