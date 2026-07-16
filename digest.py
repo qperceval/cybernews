@@ -31,7 +31,7 @@ FEEDS = [
     ("SANS ISC", "https://isc.sans.edu/rssfeed_full.xml"),
     ("The Record", "https://therecord.media/feed/"),
     ("CISA Advisories", "https://www.cisa.gov/cybersecurity-advisories/all.xml"),
-    ("Google Project Zero", "https://googleprojectzero.blogspot.com/feeds/posts/default"),
+    ("Google Project Zero", "https://projectzero.google/feed.xml"),
 ]
 
 LOOKBACK_HOURS = 24
