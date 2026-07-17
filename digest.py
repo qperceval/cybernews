@@ -24,6 +24,7 @@ from anthropic import Anthropic
 # --------------------------------------------------------------------------
 
 FEEDS = [
+ # --- International press (EN) ---
     ("BleepingComputer", "https://www.bleepingcomputer.com/feed/"),
     ("The Hacker News", "https://feeds.feedburner.com/TheHackersNews"),
     ("Krebs on Security", "https://krebsonsecurity.com/feed/"),
@@ -32,7 +33,20 @@ FEEDS = [
     ("The Record", "https://therecord.media/feed/"),
     ("SecurityWeek", "https://www.securityweek.com/feed/"),
     ("Google Project Zero", "https://googleprojectzero.blogspot.com/feeds/posts/default"),
-    # CISA retired its RSS feeds in May 2025 (GovDelivery email only now).
+ 
+    # --- French press (FR) ---
+    ("InCyber", "https://incyber.org/feed/"),
+    ("LeMagIT", "https://www.lemagit.fr/rss/ContentSyndication.xml"),
+    ("01net Sécurité", "https://www.01net.com/rss/actualites/securite/"),
+ 
+    # --- Government CERTs ---
+    ("CERT-FR", "https://www.cert.ssi.gouv.fr/feed/"),
+    ("ANSSI", "https://cyber.gouv.fr/actualites/rss/"),
+    ("CERT-EU Advisories", "https://cert.europa.eu/publications/security-advisories-rss"),
+    ("CERT-EU Threat Intel", "https://cert.europa.eu/publications/threat-intelligence-rss"),
+    ("ACSC Alerts", "https://www.cyber.gov.au/rss/alerts"),
+    ("ACSC Advisories", "https://www.cyber.gov.au/rss/advisories"),
+    # CISA (formerly us-cert.gov) retired its RSS feeds in May 2025 — no feed exists.
     # For KEV data, poll the JSON catalog instead — it's still published:
     # https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
 ]
