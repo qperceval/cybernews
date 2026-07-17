@@ -70,7 +70,11 @@ one-line headline followed by 2-3 sentences of context and why it matters.
 Rules:
 - Rank by real-world impact: actively exploited vulnerabilities, large breaches, and \
 critical infrastructure incidents outrank product announcements and opinion pieces.
-- Group items that cover the same underlying story into one entry.
+- Group items that cover the same underlying story into one entry. The same incident is \
+often reported by both an English and a French outlet under different headlines, and by \
+a CERT as an advisory — merge all of these into a single entry citing every source.
+- A CERT advisory (CERT-FR, CERT-EU, ACSC, ANSSI) confirming an incident outranks press \
+speculation about it. Prefer the advisory's framing and link both.
 - Cite the source name in parentheses with a link to the source URL.
 - Write in your own words. Do not quote the source text.
 - If a claim is unconfirmed or vendor-supplied, say so.
