@@ -3,7 +3,7 @@ name: Daily cyber digest
 on:
   schedule:
     # 05:30 UTC = 07:30 Paris (summer) / 06:30 (winter). GitHub cron is always UTC.
-    - cron: "27 3 * * *"
+    - cron: "23 7 * * *"
     timezone: "Europe/Paris"
   workflow_dispatch: {}   # lets you trigger a run by hand from the Actions tab
 
